@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  test-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: test-rabbitmq
+    volumes:
+      - rabbitmq_etc_volume:/etc/rabbitmq/
+      - rabbitmq_data_volume:/var/lib/rabbitmq/
+      - rabbitmq_log_volume:/var/log/rabbitmq/
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  # Named Volume 컨테이너 내부 파일 시스템과 마운트 될 볼륨 위치를 알아서 잡아줌
+  rabbitmq_etc_volume:
+  rabbitmq_data_volume:
+  rabbitmq_log_volume:
