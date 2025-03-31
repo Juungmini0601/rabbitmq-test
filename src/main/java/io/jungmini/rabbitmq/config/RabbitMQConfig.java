@@ -1,59 +1,41 @@
 package io.jungmini.rabbitmq.config;
 
-
-import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import io.jungmini.rabbitmq.component.Receiver;
-import io.jungmini.rabbitmq.component.WorkQueueConsumer;
 
 /**
  * @author    : kimjungmin
  * Created on : 2025. 3. 31.
  */
+@EnableRabbit
 @Configuration
 public class RabbitMQConfig {
 
-	public static final String QUEUE_NAME = "Work_Queue";
+	public static final String QUEUE_NAME = "notificationQueue";
+	public static final String FANOUT_EXCHANGE = "notificationExchange";
 
 	// RabbitMQ 큐 정의
 	// false 파라미터는 큐가 휘발성인지 영속성인지를 지정하는 옵션
 	// false로 설정하면 서버가 종료되거나 재시작될 때 큐의 메시지가 사라짐
 	@Bean
-	public Queue queue() {
-		return new Queue(QUEUE_NAME, true);
+	public Queue notificationQueue() {
+		return new Queue(QUEUE_NAME, false); // 메시지는 volatile로 설정
 	}
 
-	// 메시지를 주고 받기 위한 빈 생성
-	// Sender에서 rabbitTemplate.convertAndSend를 이용해서 전송
+	// Fanout Exchange
 	@Bean
-	public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-		return new RabbitTemplate(connectionFactory);
+	public FanoutExchange fanoutExchange() {
+		return new FanoutExchange(FANOUT_EXCHANGE);
 	}
 
-	// 메세지를 비동기적으로 수신하기 위한 빈 특정 큐를 지속적으로 모니터링하고 수신하면 MessageListenerAdapter를 통해서 처리함
-	// SimpleMessageListenerContainer가 없으면 폴링해서 메시지를 가져와야 함
+	// BindingBuilder.bind().to() 를 통해 큐와 익스체인지를 연결
 	@Bean
-	public SimpleMessageListenerContainer container(ConnectionFactory connectionFactory, MessageListenerAdapter listenerAdapter) {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-		container.setConnectionFactory(connectionFactory);
-		container.setQueueNames(QUEUE_NAME);
-		container.setMessageListener(listenerAdapter);
-		// 기본 설정에서 Consumer가 ACK를 보내지 않으면 메시지를 더 안내보냄
-		// ACK를 자동으로 보내는 옵션, Manual로 설정하면 메시지 재처리, DLQ, Delay Queue 처리 하는 로직 넣을 수 있음
-		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
-		return container;
-	}
-
-	// 메세지가 들어 왔을때 호출할 메소드 이름을 지정하는 역할을 한다. 여기서 메소드 이름 틀리면 잘 안돌아감
-	@Bean
-	public MessageListenerAdapter listenerAdapter(WorkQueueConsumer consumer) {
-		return new MessageListenerAdapter(consumer, "workQueueTask");
+	public Binding bindNotification(Queue notificationQueue, FanoutExchange fanoutExchange) {
+		return BindingBuilder.bind(notificationQueue).to(fanoutExchange);
 	}
 }
