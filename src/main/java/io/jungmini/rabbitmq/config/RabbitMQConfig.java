@@ -1,6 +1,7 @@
 package io.jungmini.rabbitmq.config;
 
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.jungmini.rabbitmq.component.Receiver;
+import io.jungmini.rabbitmq.component.WorkQueueConsumer;
 
 /**
  * @author    : kimjungmin
@@ -18,14 +20,14 @@ import io.jungmini.rabbitmq.component.Receiver;
 @Configuration
 public class RabbitMQConfig {
 
-	public static final String QUEUE_NAME = "test_queue";
+	public static final String QUEUE_NAME = "Work_Queue";
 
 	// RabbitMQ 큐 정의
 	// false 파라미터는 큐가 휘발성인지 영속성인지를 지정하는 옵션
 	// false로 설정하면 서버가 종료되거나 재시작될 때 큐의 메시지가 사라짐
 	@Bean
 	public Queue queue() {
-		return new Queue(QUEUE_NAME, false);
+		return new Queue(QUEUE_NAME, true);
 	}
 
 	// 메시지를 주고 받기 위한 빈 생성
@@ -43,12 +45,15 @@ public class RabbitMQConfig {
 		container.setConnectionFactory(connectionFactory);
 		container.setQueueNames(QUEUE_NAME);
 		container.setMessageListener(listenerAdapter);
+		// 기본 설정에서 Consumer가 ACK를 보내지 않으면 메시지를 더 안내보냄
+		// ACK를 자동으로 보내는 옵션, Manual로 설정하면 메시지 재처리, DLQ, Delay Queue 처리 하는 로직 넣을 수 있음
+		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		return container;
 	}
 
 	// 메세지가 들어 왔을때 호출할 메소드 이름을 지정하는 역할을 한다. 여기서 메소드 이름 틀리면 잘 안돌아감
 	@Bean
-	public MessageListenerAdapter listenerAdapter(Receiver receiver) {
-		return new MessageListenerAdapter(receiver, "receiveMessage");
+	public MessageListenerAdapter listenerAdapter(WorkQueueConsumer consumer) {
+		return new MessageListenerAdapter(consumer, "workQueueTask");
 	}
 }

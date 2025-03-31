@@ -1,4 +1,9 @@
 GET http://localhost:8080/test
 ###
-
+# 기본 큐 테스트
 GET http://localhost:8080/send?message=ㅇㅋ 개굿
+
+###
+
+# workQueue 테스트
+GET http://localhost:8080/workqueue?message=Task1&duration=2000
