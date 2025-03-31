@@ -11,12 +11,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 	@Override
 	public void configureMessageBroker(MessageBrokerRegistry config) {
-		config.enableStompBrokerRelay("/topic")
-			.setRelayHost("localhost")
-			.setRelayPort(61613)
-			.setClientLogin("jungmini")
-			.setClientPasscode("qwer1234");
-
+		config.enableStompBrokerRelay("/topic");
 		config.setApplicationDestinationPrefixes("/app"); // 서버 발행 경로
 	}
 
